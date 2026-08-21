@@ -20,6 +20,7 @@ export default function Checkout() {
   const total = subtotal + deliveryFee;
 
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const [orderCode, setOrderCode] = React.useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,6 +39,7 @@ export default function Checkout() {
       const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
       localStorage.setItem('philos_orders', JSON.stringify([newOrder, ...existingOrders]));
 
+      setOrderCode(newOrder.id);
       setIsSuccess(true);
       setTimeout(() => {
         clearCart();
@@ -59,30 +61,18 @@ export default function Checkout() {
     const orderId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
     
     // Build the WhatsApp message
-    let msg = `*NEW ORDER (${orderId})* 🚀
-
-`;
-    msg += `*Customer:* ${formData.name}
-`;
-    msg += `*Phone:* ${formData.phone}
-`;
-    if (formData.address) msg += `*Address:* ${formData.address}
-`;
-    if (formData.notes) msg += `*Notes:* ${formData.notes}
-
-`;
+    let msg = `*NEW ORDER (${orderId})* 🚀\n\n`;
+    msg += `*Customer:* ${formData.name}\n`;
+    msg += `*Phone:* ${formData.phone}\n`;
+    if (formData.address) msg += `*Address:* ${formData.address}\n`;
+    if (formData.notes) msg += `*Notes:* ${formData.notes}\n\n`;
     
-    msg += `*ORDER DETAILS:*
-`;
+    msg += `*ORDER DETAILS:*\n`;
     cart.forEach(item => {
-      msg += `▪️ ${item.quantity || 1}x ${item.name} (${item.size}) - GHC ${item.price * (item.quantity || 1)}
-`;
+      msg += `▪️ ${item.quantity || 1}x ${item.name} (${item.size || 'STANDARD'}) - GHC ${item.price * (item.quantity || 1)}\n`;
     });
-    msg += `
-*TOTAL: GHC ${total}*
-`;
-    msg += `
-Track this order on our website using ID: ${orderId}`;
+    msg += `\n*TOTAL: GHC ${total}*\n`;
+    msg += `\nTrack this order on our website using ID: ${orderId}`;
 
     // Save order to local storage so the admin and tracking pages see it
     const newOrder = {
@@ -112,6 +102,13 @@ Track this order on our website using ID: ${orderId}`;
 
   return (
     <>
+    {/* --- AMBIENT BACKGROUND ADDED HERE --- */}
+    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-[#fdfcfb]">
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-orange-400/10 blur-[120px]"></div>
+      <div className="absolute top-[40%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-amber-400/5 blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] left-[10%] w-[60vw] h-[60vw] rounded-full bg-amber-400/15 blur-[150px]"></div>
+    </div>
+
     <div className="max-w-6xl mx-auto px-4 py-12 font-sans">
       <button 
         onClick={() => navigate('/place-order')}
