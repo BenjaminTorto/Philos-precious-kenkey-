@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-primary antialiased overflow-x-hidden;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Custom Mobile Spacing Adjustments */
+.mobile-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10;
+}
+
+.card-padding {
+  @apply p-5 sm:p-8 rounded-3xl;
+}
