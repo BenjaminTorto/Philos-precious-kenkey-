@@ -34,7 +34,7 @@ export default function CartDrawer() {
             </div>
             <button 
               onClick={() => setIsCartOpen(false)}
-              className="p-2 rounded-full hover:bg-surface transition-colors"
+              className="p-2 rounded-full hover:bg-surface transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -53,7 +53,7 @@ export default function CartDrawer() {
                   <div key={`${item.name}-${item.size}-${index}`} className="bg-surface rounded-2xl p-4 flex items-center justify-between border border-primary/5 shadow-sm">
                     <div>
                       <p className="font-serif text-base font-medium">{item.name}</p>
-                      <p className="font-sans text-xs text-accent uppercase tracking-wider mt-0.5">Option: {item.size}</p>
+                      <p className="font-sans text-xs text-accent uppercase tracking-wider mt-0.5">Option: {item.size || 'STANDARD'}</p>
                       <p className="font-sans font-semibold mt-1">GHC {item.price}</p>
                     </div>
 
@@ -61,14 +61,14 @@ export default function CartDrawer() {
                       <div className="flex items-center bg-background rounded-full border border-primary/10 px-2 py-1">
                         <button 
                           onClick={() => updateQuantity(item.name, item.size, -1)}
-                          className="p-1 hover:text-accent transition-colors"
+                          className="p-1 hover:text-accent transition-colors cursor-pointer"
                         >
                           <Minus size={14} />
                         </button>
                         <span className="px-3 font-sans text-sm font-medium">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item.name, item.size, 1)}
-                          className="p-1 hover:text-accent transition-colors"
+                          className="p-1 hover:text-accent transition-colors cursor-pointer"
                         >
                           <Plus size={14} />
                         </button>
@@ -76,7 +76,7 @@ export default function CartDrawer() {
 
                       <button 
                         onClick={() => removeFromCart(item.name, item.size)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -98,7 +98,7 @@ export default function CartDrawer() {
               <button 
                 type="button"
                 onClick={handleCheckout}
-                className="w-full py-4 rounded-full bg-primary text-background font-sans font-medium text-center hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98]"
+                className="w-full py-4 rounded-full bg-primary text-background font-sans font-medium text-center hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98] cursor-pointer"
               >
                 Proceed to Checkout (GHC {subtotal})
               </button>

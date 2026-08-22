@@ -9,7 +9,7 @@ export default function CartDrawer() {
 
   if (!isCartOpen) return null;
 
-  const subtotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0), 0);
+  const subtotal = cart.reduce((sum, item) => sum + ((Number(item?.price) || 0) * (item?.quantity || 1)), 0);
 
   const handleCheckout = () => {
     setIsCartOpen(false);
@@ -29,7 +29,7 @@ export default function CartDrawer() {
               <ShoppingBag size={20} className="text-accent" />
               <h2 className="font-serif text-2xl">Your Order</h2>
             </div>
-            <button onClick={() => setIsCartOpen(false)} className="p-2 rounded-full hover:bg-primary/5 transition-colors">
+            <button onClick={() => setIsCartOpen(false)} className="p-2 rounded-full hover:bg-primary/5 transition-colors cursor-pointer">
               <X size={20} />
             </button>
           </div>
@@ -42,7 +42,7 @@ export default function CartDrawer() {
                   <div>
                     <p className="font-serif font-medium text-lg">{item.name}</p>
                     <p className="text-xs text-accent uppercase tracking-wider">OPTION: {item.size || 'STANDARD'}</p>
-                    <p className="text-sm font-bold mt-1 text-primary">GHC {item.price || 0}</p>
+                    <p className="text-sm font-bold mt-1 text-primary">GHC {Number(item.price || 0) * (item.quantity || 1)} {item.quantity > 1 ? `(Qty: ${item.quantity})` : ''}</p>
                   </div>
                   <button 
                     onClick={() => removeFromCart(item.cartId !== undefined ? item.cartId : index)}
