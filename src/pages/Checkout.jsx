@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ArrowLeft, MessageCircle } from 'lucide-react';
+import { supabase } from '../config/supabase';
 
 export default function Checkout() {
   const { cart, clearCart } = useCart();
@@ -22,51 +23,94 @@ export default function Checkout() {
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [orderCode, setOrderCode] = React.useState('');
 
-  const handleSubmit = (e) => {
+  // Builds the record in the exact shape the Admin Dashboard, Track Order,
+  // and My Orders pages expect from the Supabase "orders" table.
+  const buildOrderRecord = (orderId) => ({
+    id: orderId,
+    customer_name: formData.name,
+    customer_phone: formData.phone,
+    address: formData.deliveryType === 'delivery' ? formData.address : 'Pickup',
+    dietary_notes: formData.notes || null,
+    cart_items: cart,
+    total,
+    status: 'Pending',
+  });
+
+  // Saves the order to Supabase (so it's searchable in My Orders / visible in
+  // Admin) and awards loyalty points. Always also writes to localStorage as a
+  // fallback so Track Order still works even if Supabase is unreachable.
+  const saveOrder = async (orderId) => {
+    const record = buildOrderRecord(orderId);
+
+    const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
+    localStorage.setItem(
+      'philos_orders',
+      JSON.stringify([{ ...record, date: new Date().toLocaleDateString() }, ...existingOrders])
+    );
+
+    try {
+      const { error: orderError } = await supabase.from('orders').insert([record]);
+      if (orderError) throw orderError;
+
+      // Award loyalty points: 10 per order, creating the member on their first order
+      const { data: existingMember } = await supabase
+        .from('loyalty_members')
+        .select('*')
+        .eq('phone', formData.phone)
+        .single();
+
+      if (existingMember) {
+        await supabase
+          .from('loyalty_members')
+          .update({ points: (existingMember.points || 0) + 10, customer_name: formData.name })
+          .eq('phone', formData.phone);
+      } else {
+        await supabase
+          .from('loyalty_members')
+          .insert([{ phone: formData.phone, customer_name: formData.name, points: 10 }]);
+      }
+    } catch (err) {
+      // Order still exists locally even if this fails, so we don't block checkout
+      console.error('Could not save order to Supabase (order was still saved locally):', err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
     try {
-      const newOrder = {
-        id: 'PH-' + Math.floor(1000 + Math.random() * 9000),
-        date: new Date().toLocaleDateString(),
-        items: cart,
-        total,
-        status: 'Pending',
-        ...formData,
-      };
+      const orderId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
+      await saveOrder(orderId);
 
-      const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
-      localStorage.setItem('philos_orders', JSON.stringify([newOrder, ...existingOrders]));
-
-      setOrderCode(newOrder.id);
+      setOrderCode(orderId);
       setIsSuccess(true);
       setTimeout(() => {
         clearCart();
-        navigate('/track', { state: { shortOrderId: newOrder.id } });
+        navigate('/track', { state: { shortOrderId: orderId } });
       }, 3000);
     } catch (err) {
       alert('Failed to place order. Please try again.');
     }
   };
 
-    const handleWhatsAppOrder = () => {
+  const handleWhatsAppOrder = async () => {
     if (!formData.name || !formData.phone) {
       alert('Please fill in your name and phone number to continue via WhatsApp.');
       return;
     }
     if (cart.length === 0) return;
 
-    // Generate the order ID
     const orderId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
-    
+    await saveOrder(orderId);
+
     // Build the WhatsApp message
     let msg = `*NEW ORDER (${orderId})* 🚀\n\n`;
     msg += `*Customer:* ${formData.name}\n`;
     msg += `*Phone:* ${formData.phone}\n`;
     if (formData.address) msg += `*Address:* ${formData.address}\n`;
     if (formData.notes) msg += `*Notes:* ${formData.notes}\n\n`;
-    
+
     msg += `*ORDER DETAILS:*\n`;
     cart.forEach(item => {
       msg += `▪️ ${item.quantity || 1}x ${item.name} (${item.size || 'STANDARD'}) - GHC ${item.price * (item.quantity || 1)}\n`;
@@ -74,20 +118,8 @@ export default function Checkout() {
     msg += `\n*TOTAL: GHC ${total}*\n`;
     msg += `\nTrack this order on our website using ID: ${orderId}`;
 
-    // Save order to local storage so the admin and tracking pages see it
-    const newOrder = {
-      id: orderId,
-      date: new Date().toLocaleDateString(),
-      items: cart,
-      total,
-      status: 'Pending',
-      ...formData,
-    };
-    const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
-    localStorage.setItem('philos_orders', JSON.stringify([newOrder, ...existingOrders]));
-
     // Open WhatsApp in a new tab (Formatted for Ghana +233)
-    const waNumber = '233207800925'; 
+    const waNumber = '233207800925';
     const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
 

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { Check, ShoppingBag, Clock } from 'lucide-react';
+import { supabase } from '../config/supabase';
 
 export default function PlaceOrder() {
   const { addToCart, cart, setIsCartOpen } = useCart();
@@ -62,6 +63,39 @@ export default function PlaceOrder() {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
+
+  // --- LIVE INVENTORY: reflects the "Sold Out" toggle from the Admin Dashboard ---
+  const [unavailableItems, setUnavailableItems] = useState([]);
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const { data, error } = await supabase.from('menu_items').select('*');
+        if (error) throw error;
+        const soldOut = (data || [])
+          .filter((item) => item.is_available === false)
+          .map((item) => item.name.toLowerCase());
+        setUnavailableItems(soldOut);
+      } catch (err) {
+        // If inventory can't be loaded, default to showing everything as available
+        console.error('Could not load live inventory:', err);
+      }
+    };
+    fetchInventory();
+  }, []);
+
+  // Loosely matches an add-on's name (e.g. "Extra Shrimp / Monko") against
+  // whatever the admin named it in the menu_items table (e.g. "Shrimp")
+  const isAddonSoldOut = (addonName) => {
+    const normalized = addonName
+      .toLowerCase()
+      .replace('extra', '')
+      .replace(/\(.*?\)/g, '')
+      .trim();
+    return unavailableItems.some(
+      (dbName) => dbName.includes(normalized) || normalized.includes(dbName)
+    );
+  };
 
   return (
     <div className="min-h-screen relative z-0 text-primary px-4 md:px-6 pt-12 pb-32 max-w-6xl mx-auto font-sans">
@@ -199,24 +233,40 @@ export default function PlaceOrder() {
 
                 {isOpen && (
                   <div className="px-8 pb-8 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-stone-100">
-                    {addons.map((addon) => (
-                      <div 
-                        key={addon.id}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-stone-50/80 border border-stone-200/60 hover:border-orange-500/50 transition-all"
-                      >
-                        <div>
-                          <h3 className="font-medium text-sm text-stone-900">{addon.name}</h3>
-                          <span className="text-xs text-orange-600 font-semibold">GHC {addon.price}</span>
-                        </div>
-                        <button 
-                          onClick={() => addToCart({ id: addon.id, name: addon.name, price: addon.price, quantity: 1, image: '/showcase.jpg' })}
-                          className="w-9 h-9 rounded-full bg-[#111111] text-white flex items-center justify-center hover:bg-neutral-800 transition-all shadow-md cursor-pointer"
-                          title="Add to order"
+                    {addons.map((addon) => {
+                      const soldOut = isAddonSoldOut(addon.name);
+                      return (
+                        <div 
+                          key={addon.id}
+                          className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                            soldOut
+                              ? 'bg-stone-100 border-stone-200 opacity-60'
+                              : 'bg-stone-50/80 border-stone-200/60 hover:border-orange-500/50'
+                          }`}
                         >
-                          <span className="text-base font-light">+</span>
-                        </button>
-                      </div>
-                    ))}
+                          <div>
+                            <h3 className="font-medium text-sm text-stone-900">{addon.name}</h3>
+                            {soldOut ? (
+                              <span className="text-xs text-red-500 font-semibold uppercase tracking-wider">Sold Out</span>
+                            ) : (
+                              <span className="text-xs text-orange-600 font-semibold">GHC {addon.price}</span>
+                            )}
+                          </div>
+                          <button 
+                            onClick={() => !soldOut && addToCart({ id: addon.id, name: addon.name, price: addon.price, quantity: 1, image: '/showcase.jpg' })}
+                            disabled={soldOut}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all ${
+                              soldOut
+                                ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                                : 'bg-[#111111] text-white hover:bg-neutral-800 cursor-pointer'
+                            }`}
+                            title={soldOut ? 'Currently sold out' : 'Add to order'}
+                          >
+                            <span className="text-base font-light">+</span>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
