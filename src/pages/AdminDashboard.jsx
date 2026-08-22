@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, ShieldCheck, LogOut, Bell, LayoutDashboard, PackageSearch, BarChart3, TrendingUp, DollarSign, ToggleLeft, ToggleRight, Clock, Trophy } from 'lucide-react';
+import { RefreshCw, ShieldCheck, LogOut, Bell, LayoutDashboard, PackageSearch, BarChart3, TrendingUp, DollarSign, ToggleLeft, ToggleRight, Clock, Trophy, Pencil, Check, X, Loader2 } from 'lucide-react';
 import { supabase } from '../config/supabase';
 
 export default function AdminDashboard({ setIsAuthenticated }) {
@@ -104,6 +104,45 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   };
 
+  // --- Price editing ---
+  const [editingPrice, setEditingPrice] = useState(null); // name of item currently being edited
+  const [priceDraft, setPriceDraft] = useState('');
+  const [savingPrice, setSavingPrice] = useState(null);
+
+  const startEditingPrice = (item) => {
+    setEditingPrice(item.name);
+    setPriceDraft(String(item.price ?? 0));
+  };
+
+  const cancelEditingPrice = () => {
+    setEditingPrice(null);
+    setPriceDraft('');
+  };
+
+  const savePrice = async (name) => {
+    const newPrice = Number(priceDraft);
+    if (Number.isNaN(newPrice) || newPrice < 0) {
+      alert('Please enter a valid price.');
+      return;
+    }
+
+    setSavingPrice(name);
+    try {
+      const { error } = await supabase.from('menu_items').update({ price: newPrice }).eq('name', name);
+      if (error) throw error;
+
+      const updatedInventory = inventory.map(item => item.name === name ? { ...item, price: newPrice } : item);
+      setInventory(updatedInventory);
+    } catch (err) {
+      console.error('Error updating price:', err);
+      alert('Could not save the new price. Please check your connection and try again.');
+    } finally {
+      setSavingPrice(null);
+      setEditingPrice(null);
+      setPriceDraft('');
+    }
+  };
+
   // --- Analytics Calculations ---
   const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
   const completedOrders = orders.filter(o => o.status === 'Completed').length;
@@ -200,7 +239,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-primary/10 pb-6">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <span className="font-mono text-xl font-bold">#{order.id.toUpperCase()}</span>
+                    <span className="font-mono text-xl font-bold">#{(order.short_id || order.id).toUpperCase()}</span>
                     <span className="text-xs text-accent uppercase tracking-wider">{new Date((order.created_at || order.date)).toLocaleTimeString()}</span>
                   </div>
                   {order.scheduled_time && (
@@ -253,18 +292,64 @@ export default function AdminDashboard({ setIsAuthenticated }) {
           <h2 className="font-serif text-2xl mb-6">Menu Availability</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {inventory.map((item) => (
-              <div key={item.name} className="flex items-center justify-between p-4 bg-background rounded-2xl border border-primary/10">
-                <div>
-                  <p className="font-serif font-medium text-lg">{item.name}</p>
+              <div key={item.name} className="flex items-center justify-between gap-4 p-4 bg-background rounded-2xl border border-primary/10">
+                <div className="min-w-0">
+                  <p className="font-serif font-medium text-lg truncate">{item.name}</p>
                   <p className="text-xs text-accent uppercase tracking-widest">{item.category}</p>
                 </div>
-                <button 
-                  onClick={() => toggleInventory(item.name, item.is_available)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase transition-all ${item.is_available ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-500'}`}
-                >
-                  {item.is_available ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-                  <span>{item.is_available ? 'In Stock' : 'Sold Out'}</span>
-                </button>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {editingPrice === item.name ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-primary/60">GHC</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        autoFocus
+                        value={priceDraft}
+                        onChange={(e) => setPriceDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') savePrice(item.name);
+                          if (e.key === 'Escape') cancelEditingPrice();
+                        }}
+                        className="w-20 px-2 py-1.5 rounded-lg bg-surface border border-primary/20 text-sm font-mono focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={() => savePrice(item.name)}
+                        disabled={savingPrice === item.name}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-all cursor-pointer disabled:opacity-50"
+                        title="Save price"
+                      >
+                        {savingPrice === item.name ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                      </button>
+                      <button
+                        onClick={cancelEditingPrice}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all cursor-pointer"
+                        title="Cancel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => startEditingPrice(item)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-bold bg-primary/5 text-primary hover:bg-primary/10 transition-all cursor-pointer"
+                      title="Edit price"
+                    >
+                      <span className="font-mono">GHC {Number(item.price ?? 0)}</span>
+                      <Pencil size={12} className="text-primary/50" />
+                    </button>
+                  )}
+
+                  <button 
+                    onClick={() => toggleInventory(item.name, item.is_available)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase transition-all ${item.is_available ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-500'}`}
+                  >
+                    {item.is_available ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                    <span>{item.is_available ? 'In Stock' : 'Sold Out'}</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>

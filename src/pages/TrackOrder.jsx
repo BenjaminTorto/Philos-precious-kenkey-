@@ -32,7 +32,7 @@ export default function TrackOrder() {
         const { data, error } = await supabase
           .from('orders')
           .select('*')
-          .ilike('id', `${searchId.trim()}%`)
+          .ilike('short_id', `${searchId.trim()}%`)
           .limit(1);
           
         if (error) throw error;
@@ -109,7 +109,7 @@ export default function TrackOrder() {
                   <div className="flex justify-between items-start border-b border-primary/10 pb-6">
                     <div>
                       <p className="text-xs uppercase tracking-widest text-accent font-semibold mb-1">PHILOS PRECIOUS KENKEY</p>
-                      <p className="font-mono text-2xl font-bold">#{order.id.toUpperCase()}</p>
+                      <p className="font-mono text-2xl font-bold">#{(order.short_id || order.id).toUpperCase()}</p>
                     </div>
                     <div className="px-4 py-1.5 rounded-full bg-primary text-background text-xs font-bold uppercase tracking-wider print:border print:border-primary">
                       {order.status || 'Pending'}

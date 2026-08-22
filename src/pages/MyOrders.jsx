@@ -78,7 +78,7 @@ export default function MyOrders() {
 
             {orders.length > 0 ? (
               orders.map((order) => {
-                const shortId = order.id.split('-')[0].toUpperCase();
+                const shortId = (order.short_id || order.id).toUpperCase();
                 return (
                   <div key={order.id} className="bg-surface rounded-3xl p-6 border border-primary/10 shadow-xl">
                     <div className="flex justify-between items-start border-b border-primary/10 pb-4 mb-4">
