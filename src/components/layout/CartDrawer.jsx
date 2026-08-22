@@ -11,6 +11,12 @@ export default function CartDrawer() {
 
   const computedSubtotal = cart.reduce((sum, item) => sum + (Number(item?.price || 0) * (item?.quantity || 1)), 0);
 
+  const handleRemove = (cartId) => {
+    removeFromCart(cartId);
+    setIsCartOpen(false);
+    navigate('/place-order');
+  };
+
   const handleCheckout = () => {
     setIsCartOpen(false);
     navigate('/checkout');
@@ -47,8 +53,8 @@ export default function CartDrawer() {
               </div>
             ) : (
               <div className="space-y-4">
-                {cart.map((item, index) => (
-                  <div key={`${item.name}-${item.size}-${index}`} className="bg-surface rounded-2xl p-4 flex items-center justify-between border border-primary/5 shadow-sm">
+                {cart.map((item) => (
+                  <div key={item.cartId} className="bg-surface rounded-2xl p-4 flex items-center justify-between border border-primary/5 shadow-sm">
                     <div>
                       <p className="font-serif text-sm md:text-base font-medium">{item.name}</p>
                       <p className="font-sans text-[10px] md:text-xs text-accent uppercase tracking-wider mt-0.5">Option: {item.size || 'STANDARD'}</p>
@@ -58,14 +64,14 @@ export default function CartDrawer() {
                     <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
                       <div className="flex items-center bg-background rounded-full border border-primary/10 px-2 py-1">
                         <button 
-                          onClick={() => updateQuantity(item.name, item.size, -1)}
+                          onClick={() => updateQuantity(item.cartId, -1)}
                           className="p-1 hover:text-accent transition-colors cursor-pointer"
                         >
                           <Minus size={14} />
                         </button>
                         <span className="px-3 font-sans text-xs md:text-sm font-medium">{item.quantity}</span>
                         <button 
-                          onClick={() => updateQuantity(item.name, item.size, 1)}
+                          onClick={() => updateQuantity(item.cartId, 1)}
                           className="p-1 hover:text-accent transition-colors cursor-pointer"
                         >
                           <Plus size={14} />
@@ -73,7 +79,7 @@ export default function CartDrawer() {
                       </div>
 
                       <button 
-                        onClick={() => removeFromCart(item.name, item.size)}
+                        onClick={() => handleRemove(item.cartId)}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                       >
                         <Trash2 size={16} />

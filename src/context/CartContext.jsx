@@ -16,29 +16,42 @@ export function CartProvider({ children }) {
 
   const addToCart = (newItem) => {
     setCart((prevCart) => {
-      const uniqueItem = { 
-        ...newItem, 
-        cartId: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9), 
-        quantity: 1 
+      // If this exact item (same id + size) is already in the cart, just bump its quantity
+      const existingIndex = prevCart.findIndex(
+        (item) => item.id === newItem.id && item.size === newItem.size
+      );
+
+      if (existingIndex !== -1) {
+        const updated = [...prevCart];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + 1,
+        };
+        return updated;
+      }
+
+      const uniqueItem = {
+        ...newItem,
+        cartId: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+        quantity: 1,
       };
       return [...prevCart, uniqueItem];
     });
   };
 
-  const removeFromCart = (identifier) => {
-    setCart((prevCart) => {
-      // If identifier is a number, filter out by row index
-      if (typeof identifier === 'number') {
-        return prevCart.filter((_, idx) => idx !== identifier);
-      }
-      // Otherwise filter by cartId string
-      const filtered = prevCart.filter(item => item.cartId !== identifier);
-      // Fallback if ID match fails: remove the first item or clear if single
-      if (filtered.length === prevCart.length && prevCart.length > 0) {
-        return prevCart.slice(1);
-      }
-      return filtered;
-    });
+  const removeFromCart = (cartId) => {
+    setCart((prevCart) => prevCart.filter((item) => item.cartId !== cartId));
+  };
+
+  const updateQuantity = (cartId, delta) => {
+    setCart((prevCart) =>
+      prevCart
+        .map((item) =>
+          item.cartId === cartId ? { ...item, quantity: item.quantity + delta } : item
+        )
+        // If quantity drops to 0 or below, remove the item entirely
+        .filter((item) => item.quantity > 0)
+    );
   };
 
   const clearCart = () => {
@@ -47,7 +60,7 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, isCartOpen, setIsCartOpen }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, isCartOpen, setIsCartOpen }}>
       {children}
     </CartContext.Provider>
   );
