@@ -4,10 +4,13 @@ import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 
 export default function CartDrawer() {
-  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
 
   if (!isCartOpen) return null;
+
+  // Compute subtotal locally based on item price and quantity
+  const computedSubtotal = cart.reduce((sum, item) => sum + (Number(item?.price || 0) * (item?.quantity || 1)), 0);
 
   const handleCheckout = () => {
     setIsCartOpen(false);
@@ -92,7 +95,7 @@ export default function CartDrawer() {
             <div className="p-6 border-t border-primary/15 bg-surface/50 space-y-4">
               <div className="flex justify-between items-center text-lg font-serif font-bold text-primary pb-2">
                 <span>Subtotal</span>
-                <span className="text-xl">GHC {subtotal}</span>
+                <span className="text-xl">GHC {computedSubtotal}</span>
               </div>
 
               <button 
@@ -100,7 +103,7 @@ export default function CartDrawer() {
                 onClick={handleCheckout}
                 className="w-full py-4 rounded-full bg-primary text-background font-sans font-medium text-center hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98] cursor-pointer"
               >
-                Proceed to Checkout (GHC {subtotal})
+                Proceed to Checkout (GHC {computedSubtotal})
               </button>
             </div>
           )}
