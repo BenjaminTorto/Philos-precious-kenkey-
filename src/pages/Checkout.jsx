@@ -16,22 +16,27 @@ export default function Checkout() {
     deliveryType: 'delivery',
   });
 
-  const subtotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0), 0);
+  const subtotal = cart.reduce((sum, item) => sum + ((Number(item?.price) || 0) * (item.quantity || 1)), 0);
   const deliveryFee = formData.deliveryType === 'delivery' ? 25 : 0;
   const total = subtotal + deliveryFee;
 
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [orderCode, setOrderCode] = React.useState('');
 
-  // Builds the record in the exact shape the Admin Dashboard, Track Order,
-  // and My Orders pages expect from the Supabase "orders" table.
-  const buildOrderRecord = (orderId) => ({
-    id: orderId,
+  // Builds the record in the exact shape your Supabase "orders" table expects.
+  // Note: "id" is a uuid Supabase generates automatically - we never set it
+  // ourselves. The friendly code (e.g. "PH-1234") is stored in "short_id" and
+  // is what customers use to track their order.
+  const buildOrderRecord = (shortId) => ({
+    short_id: shortId,
     customer_name: formData.name,
     customer_phone: formData.phone,
-    address: formData.deliveryType === 'delivery' ? formData.address : 'Pickup',
+    fulfillment_type: formData.deliveryType,
+    address: formData.deliveryType === 'delivery' ? formData.address : null,
     dietary_notes: formData.notes || null,
     cart_items: cart,
+    subtotal,
+    delivery_fee: deliveryFee,
     total,
     status: 'Pending',
   });
@@ -39,13 +44,13 @@ export default function Checkout() {
   // Saves the order to Supabase (so it's searchable in My Orders / visible in
   // Admin) and awards loyalty points. Always also writes to localStorage as a
   // fallback so Track Order still works even if Supabase is unreachable.
-  const saveOrder = async (orderId) => {
-    const record = buildOrderRecord(orderId);
+  const saveOrder = async (shortId) => {
+    const record = buildOrderRecord(shortId);
 
     const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
     localStorage.setItem(
       'philos_orders',
-      JSON.stringify([{ ...record, date: new Date().toLocaleDateString() }, ...existingOrders])
+      JSON.stringify([{ ...record, id: shortId, date: new Date().toLocaleDateString() }, ...existingOrders])
     );
 
     try {
@@ -80,14 +85,14 @@ export default function Checkout() {
     if (cart.length === 0) return;
 
     try {
-      const orderId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
-      await saveOrder(orderId);
+      const shortId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
+      await saveOrder(shortId);
 
-      setOrderCode(orderId);
+      setOrderCode(shortId);
       setIsSuccess(true);
       setTimeout(() => {
         clearCart();
-        navigate('/track', { state: { shortOrderId: orderId } });
+        navigate('/track', { state: { shortOrderId: shortId } });
       }, 3000);
     } catch (err) {
       alert('Failed to place order. Please try again.');
@@ -101,11 +106,11 @@ export default function Checkout() {
     }
     if (cart.length === 0) return;
 
-    const orderId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
-    await saveOrder(orderId);
+    const shortId = 'PH-' + Math.floor(1000 + Math.random() * 9000);
+    await saveOrder(shortId);
 
     // Build the WhatsApp message
-    let msg = `*NEW ORDER (${orderId})* 🚀\n\n`;
+    let msg = `*NEW ORDER (${shortId})* 🚀\n\n`;
     msg += `*Customer:* ${formData.name}\n`;
     msg += `*Phone:* ${formData.phone}\n`;
     if (formData.address) msg += `*Address:* ${formData.address}\n`;
@@ -116,7 +121,7 @@ export default function Checkout() {
       msg += `▪️ ${item.quantity || 1}x ${item.name} (${item.size || 'STANDARD'}) - GHC ${item.price * (item.quantity || 1)}\n`;
     });
     msg += `\n*TOTAL: GHC ${total}*\n`;
-    msg += `\nTrack this order on our website using ID: ${orderId}`;
+    msg += `\nTrack this order on our website using ID: ${shortId}`;
 
     // Open WhatsApp in a new tab (Formatted for Ghana +233)
     const waNumber = '233207800925';
@@ -124,11 +129,11 @@ export default function Checkout() {
     window.open(url, '_blank');
 
     // Trigger the success modal & auto-redirect
-    setOrderCode(orderId);
+    setOrderCode(shortId);
     setIsSuccess(true);
     setTimeout(() => {
       clearCart();
-      navigate('/track', { state: { shortOrderId: orderId } });
+      navigate('/track', { state: { shortOrderId: shortId } });
     }, 6000);
   };
 
