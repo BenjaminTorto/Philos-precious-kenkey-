@@ -8,6 +8,7 @@ import PlaceOrder from './pages/PlaceOrder';
 import Checkout from './pages/Checkout';
 import TrackOrder from './pages/TrackOrder';
 import MyOrders from './pages/MyOrders';
+import ContactUs from './pages/ContactUs';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import CartDrawer from './components/layout/CartDrawer';
@@ -18,6 +19,7 @@ const NAV_LINKS = [
   { to: '/my-orders', label: 'My Orders' },
   { to: '/track', label: 'Track' },
   { to: '/events', label: 'Events', accent: true },
+  { to: '/contact', label: 'Contact Us' },
 ];
 
 function Navbar() {
@@ -136,6 +138,7 @@ function App() {
                   <Route path="/track" element={<TrackOrder />} />
                   <Route path="/events" element={<EventBooking />} />
                   <Route path="/my-orders" element={<MyOrders />} />
+                  <Route path="/contact" element={<ContactUs />} />
                 </Routes>
               </div>
             </>
