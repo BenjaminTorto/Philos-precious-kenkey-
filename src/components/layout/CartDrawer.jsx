@@ -9,7 +9,6 @@ export default function CartDrawer() {
 
   if (!isCartOpen) return null;
 
-  // Compute subtotal locally based on item price and quantity
   const computedSubtotal = cart.reduce((sum, item) => sum + (Number(item?.price || 0) * (item?.quantity || 1)), 0);
 
   const handleCheckout = () => {
@@ -19,21 +18,18 @@ export default function CartDrawer() {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden font-sans">
-      {/* Backdrop */}
       <div 
         onClick={() => setIsCartOpen(false)}
         className="absolute inset-0 bg-primary/40 backdrop-blur-sm transition-opacity"
       />
 
-      {/* Drawer Container */}
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-background text-primary shadow-2xl flex flex-col justify-between border-l border-primary/10">
+      <div className="absolute inset-y-0 right-0 max-w-full flex w-full md:w-auto md:pl-10">
+        <div className="w-full md:w-screen md:max-w-md bg-background text-primary shadow-2xl flex flex-col justify-between border-l border-primary/10">
           
-          {/* Header */}
-          <div className="p-6 border-b border-primary/10 flex items-center justify-between">
+          <div className="p-4 md:p-6 border-b border-primary/10 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingBag size={20} />
-              <h2 className="font-serif text-2xl">Your Order</h2>
+              <h2 className="font-serif text-xl md:text-2xl">Your Order</h2>
             </div>
             <button 
               onClick={() => setIsCartOpen(false)}
@@ -43,8 +39,7 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* Cart Content Scroll Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
             {cart.length === 0 ? (
               <div className="text-center py-20 text-accent font-sans">
                 <p>Your cart is currently empty.</p>
@@ -55,12 +50,12 @@ export default function CartDrawer() {
                 {cart.map((item, index) => (
                   <div key={`${item.name}-${item.size}-${index}`} className="bg-surface rounded-2xl p-4 flex items-center justify-between border border-primary/5 shadow-sm">
                     <div>
-                      <p className="font-serif text-base font-medium">{item.name}</p>
-                      <p className="font-sans text-xs text-accent uppercase tracking-wider mt-0.5">Option: {item.size || 'STANDARD'}</p>
-                      <p className="font-sans font-semibold mt-1">GHC {item.price}</p>
+                      <p className="font-serif text-sm md:text-base font-medium">{item.name}</p>
+                      <p className="font-sans text-[10px] md:text-xs text-accent uppercase tracking-wider mt-0.5">Option: {item.size || 'STANDARD'}</p>
+                      <p className="font-sans font-semibold mt-1 text-sm md:text-base">GHC {item.price}</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
                       <div className="flex items-center bg-background rounded-full border border-primary/10 px-2 py-1">
                         <button 
                           onClick={() => updateQuantity(item.name, item.size, -1)}
@@ -68,7 +63,7 @@ export default function CartDrawer() {
                         >
                           <Minus size={14} />
                         </button>
-                        <span className="px-3 font-sans text-sm font-medium">{item.quantity}</span>
+                        <span className="px-3 font-sans text-xs md:text-sm font-medium">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item.name, item.size, 1)}
                           className="p-1 hover:text-accent transition-colors cursor-pointer"
@@ -90,24 +85,22 @@ export default function CartDrawer() {
             )}
           </div>
 
-          {/* Footer & Totals */}
           {cart.length > 0 && (
-            <div className="p-6 border-t border-primary/15 bg-surface/50 space-y-4">
-              <div className="flex justify-between items-center text-lg font-serif font-bold text-primary pb-2">
+            <div className="p-4 md:p-6 border-t border-primary/15 bg-surface/50 space-y-4 safe-area-bottom pb-8 md:pb-6">
+              <div className="flex justify-between items-center text-base md:text-lg font-serif font-bold text-primary pb-2">
                 <span>Subtotal</span>
-                <span className="text-xl">GHC {computedSubtotal}</span>
+                <span className="text-lg md:text-xl">GHC {computedSubtotal}</span>
               </div>
 
               <button 
                 type="button"
                 onClick={handleCheckout}
-                className="w-full py-4 rounded-full bg-primary text-background font-sans font-medium text-center hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98] cursor-pointer"
+                className="w-full py-3.5 md:py-4 rounded-full bg-primary text-background font-sans font-medium text-center hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98] cursor-pointer"
               >
                 Proceed to Checkout (GHC {computedSubtotal})
               </button>
             </div>
           )}
-
         </div>
       </div>
     </div>
