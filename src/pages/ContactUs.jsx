@@ -47,7 +47,7 @@ export default function ContactUs() {
             Contact Us
           </h1>
           <p className="max-w-xl mx-auto text-stone-600 text-sm md:text-base">
-            Reach out for orders, questions, or event bookings — we're happy to help.
+            Reach out for orders, questions, or event bookings we're happy to help.
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export default function ContactUs() {
           </div>
 
           <p className="text-[11px] text-stone-400 mt-4">
-            Note: double-check these social links point to your real profiles — update the URLs in ContactUs.jsx if your @handles differ.
+            
           </p>
         </div>
 
