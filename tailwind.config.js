@@ -11,6 +11,10 @@ export default {
         surface: '#FFFFFF',
         primary: '#171717',
         accent: '#D94814',
+      },
+      fontFamily: {
+        serif: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       }
     },
   },
