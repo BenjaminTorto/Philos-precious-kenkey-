@@ -20,10 +20,9 @@ function TikTokIcon(props) {
   );
 }
 
-// Phone numbers formatted for tel: and WhatsApp (Ghana country code 233)
+// Phone number formatted for tel: and WhatsApp (Ghana country code 233)
 const PHONE_NUMBERS = [
   { display: '020 780 0925', tel: '+233207800925', wa: '233207800925' },
-  { display: '026 701 8306', tel: '+233267018306', wa: '233267018306' },
 ];
 
 export default function ContactUs() {
@@ -61,7 +60,7 @@ export default function ContactUs() {
             <h2 className="font-serif text-xl md:text-2xl text-stone-900">Call or WhatsApp</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 max-w-sm">
             {PHONE_NUMBERS.map((num) => (
               <div
                 key={num.tel}
@@ -146,7 +145,7 @@ export default function ContactUs() {
             </a>
 
             <a
-              href="https://www.instagram.com/philoskenkeyhub"
+              href="https://www.instagram.com/philospreciouskenkeyhub"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 bg-background rounded-2xl p-5 border border-primary/10 hover:border-orange-500/50 transition-all cursor-pointer"
@@ -156,7 +155,7 @@ export default function ContactUs() {
               </div>
               <div>
                 <p className="font-serif font-medium text-stone-900">Instagram</p>
-                <p className="text-xs text-stone-500">Philo's Kenkey Hub</p>
+                <p className="text-xs text-stone-500">Philos Precious Kenkey Hub</p>
               </div>
             </a>
           </div>
