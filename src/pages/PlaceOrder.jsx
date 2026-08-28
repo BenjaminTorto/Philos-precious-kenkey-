@@ -15,7 +15,7 @@ export default function PlaceOrder() {
       name: 'SMALL PACKAGE',
       price: 50,
       description: 'Perfect single portion',
-      items: ['2 Balls of Kenkey', 'Fried fish & Fried eggs', 'Sausages'],
+      items: ['2 Balls of Kenkey', 'Fried fish', 'Fried eggs', 'Sausages'],
       isPopular: false
     },
     {
@@ -23,7 +23,7 @@ export default function PlaceOrder() {
       name: 'MEDIUM PACK',
       price: 70,
       description: 'Our most popular balance',
-      items: ['2 Balls of Kenkey', 'Fish / Shrimp', 'Cow leg (Kotodwe) stew'],
+      items: ['2 Balls of Kenkey', 'Fish', 'Shrimp', 'Cow leg (Kotodwe) stew'],
       isPopular: true
     },
     {
@@ -31,7 +31,7 @@ export default function PlaceOrder() {
       name: 'DEDE PACKAGE',
       price: 90,
       description: 'Extra indulgence',
-      items: ['2 Balls of Kenkey', 'Fish, Eggs, Sardine', 'Gizzard sauce & Shrimp'],
+      items: ['2 Balls of Kenkey', 'Fish', 'Eggs', 'Sardine', 'Gizzard sauce', 'Shrimp'],
       isPopular: false
     },
     {
@@ -39,7 +39,7 @@ export default function PlaceOrder() {
       name: "QUEEN'S PACKAGE",
       price: 140,
       description: 'Royal sharing portion',
-      items: ['4 Balls of Kenkey', 'Fish, Eggs, Sardine', 'Gizzard sauce & Shrimp'],
+      items: ['4 Balls of Kenkey', 'Fish', 'Eggs', 'Sardine', 'Gizzard sauce', 'Shrimp'],
       isPopular: false
     },
     {
@@ -47,16 +47,17 @@ export default function PlaceOrder() {
       name: 'FAMILY PACK',
       price: 160,
       description: 'Designed for the household',
-      items: ['6 Balls of Kenkey', 'Fish, Eggs, Sardine', 'Gizzard sauce & Shrimp'],
+      items: ['6 Balls of Kenkey', 'Fish', 'Eggs', 'Sardine', 'Gizzard sauce', 'Shrimp'],
       isPopular: false
     }
   ];
 
   const handleAdd = (pkg) => {
+    const livePrice = getLivePrice(pkg.name, pkg.price);
     addToCart({
       id: pkg.id,
       name: pkg.name,
-      price: pkg.price,
+      price: livePrice,
       quantity: 1,
       image: '/showcase.jpg'
     });
@@ -64,37 +65,35 @@ export default function PlaceOrder() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
 
-  // --- LIVE INVENTORY: reflects the "Sold Out" toggle from the Admin Dashboard ---
-  const [unavailableItems, setUnavailableItems] = useState([]);
+  // --- LIVE PRICING & INVENTORY: reflects prices/toggles set in the Admin Dashboard ---
+  const [inventoryMap, setInventoryMap] = useState({}); // name.toLowerCase() -> { price, is_available }
 
   useEffect(() => {
     const fetchInventory = async () => {
       try {
         const { data, error } = await supabase.from('menu_items').select('*');
         if (error) throw error;
-        const soldOut = (data || [])
-          .filter((item) => item.is_available === false)
-          .map((item) => item.name.toLowerCase());
-        setUnavailableItems(soldOut);
+        const map = {};
+        (data || []).forEach((item) => {
+          map[item.name.toLowerCase()] = { price: item.price, is_available: item.is_available };
+        });
+        setInventoryMap(map);
       } catch (err) {
-        // If inventory can't be loaded, default to showing everything as available
+        // If inventory can't be loaded, fall back to the hardcoded prices/availability below
         console.error('Could not load live inventory:', err);
       }
     };
     fetchInventory();
   }, []);
 
-  // Loosely matches an add-on's name (e.g. "Extra Shrimp / Monko") against
-  // whatever the admin named it in the menu_items table (e.g. "Shrimp")
-  const isAddonSoldOut = (addonName) => {
-    const normalized = addonName
-      .toLowerCase()
-      .replace('extra', '')
-      .replace(/\(.*?\)/g, '')
-      .trim();
-    return unavailableItems.some(
-      (dbName) => dbName.includes(normalized) || normalized.includes(dbName)
-    );
+  const getLivePrice = (name, fallbackPrice) => {
+    const entry = inventoryMap[name.toLowerCase()];
+    return entry && typeof entry.price === 'number' && entry.price > 0 ? entry.price : fallbackPrice;
+  };
+
+  const isSoldOut = (name) => {
+    const entry = inventoryMap[name.toLowerCase()];
+    return entry ? entry.is_available === false : false;
   };
 
   return (
@@ -130,11 +129,16 @@ export default function PlaceOrder() {
         </div>
 
         {/* Package Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {packages.slice(0, 3).map((pkg) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          {packages.slice(0, 3).map((pkg) => {
+            const livePrice = getLivePrice(pkg.name, pkg.price);
+            const soldOut = isSoldOut(pkg.name);
+            return (
             <div 
               key={pkg.id}
               className={`rounded-3xl p-8 shadow-2xl flex flex-col justify-between relative border transition-all duration-500 hover:-translate-y-2 cursor-pointer ${
+                soldOut ? 'opacity-60' : ''
+              } ${
                 pkg.isPopular 
                   ? 'bg-[#111111] text-white border-neutral-800 shadow-xl' 
                   : 'bg-white/80 backdrop-blur-2xl border-white/90 shadow-xl shadow-orange-950/5'
@@ -149,7 +153,7 @@ export default function PlaceOrder() {
                 <span className={`font-semibold text-xs tracking-widest uppercase block mb-2 ${pkg.isPopular ? 'text-orange-500' : 'text-orange-600'}`}>
                   {pkg.name}
                 </span>
-                <div className="font-serif text-4xl font-normal mb-2">GHC {pkg.price}</div>
+                <div className="font-serif text-4xl font-normal mb-2">GHC {livePrice}</div>
                 <p className={`text-xs mb-8 ${pkg.isPopular ? 'text-neutral-400' : 'text-stone-600'}`}>{pkg.description}</p>
                 
                 <ul className="space-y-4 mb-10">
@@ -163,26 +167,33 @@ export default function PlaceOrder() {
               </div>
 
               <button 
-                onClick={() => handleAdd(pkg)}
-                className={`w-full py-3.5 rounded-full font-medium text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                  pkg.isPopular ? 'bg-white text-stone-950 hover:bg-white/90' : 'bg-[#111111] text-white hover:bg-neutral-800'
+                onClick={() => !soldOut && handleAdd(pkg)}
+                disabled={soldOut}
+                className={`w-full py-3.5 rounded-full font-medium text-sm transition-all shadow-md flex items-center justify-center gap-2 ${
+                  soldOut
+                    ? 'bg-stone-400 text-white cursor-not-allowed'
+                    : `cursor-pointer ${pkg.isPopular ? 'bg-white text-stone-950 hover:bg-white/90' : 'bg-[#111111] text-white hover:bg-neutral-800'}`
                 }`}
               >
-                <span>Add to Order</span>
+                <span>{soldOut ? 'Sold Out' : 'Add to Order'}</span>
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {packages.slice(3).map((pkg) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
+          {packages.slice(3).map((pkg) => {
+            const livePrice = getLivePrice(pkg.name, pkg.price);
+            const soldOut = isSoldOut(pkg.name);
+            return (
             <div 
               key={pkg.id}
-              className="rounded-3xl p-8 bg-white/80 backdrop-blur-2xl border border-white/90 shadow-xl shadow-orange-950/5 flex flex-col justify-between relative transition-all duration-500 hover:-translate-y-2 cursor-pointer"
+              className={`rounded-3xl p-8 bg-white/80 backdrop-blur-2xl border border-white/90 shadow-xl shadow-orange-950/5 flex flex-col justify-between relative transition-all duration-500 hover:-translate-y-2 cursor-pointer ${soldOut ? 'opacity-60' : ''}`}
             >
               <div>
                 <span className="text-orange-600 font-semibold text-xs tracking-widest uppercase block mb-2">{pkg.name}</span>
-                <div className="font-serif text-4xl font-normal mb-2">GHC {pkg.price}</div>
+                <div className="font-serif text-4xl font-normal mb-2">GHC {livePrice}</div>
                 <p className="text-stone-600 text-xs mb-8">{pkg.description}</p>
                 
                 <ul className="space-y-4 mb-10">
@@ -196,13 +207,17 @@ export default function PlaceOrder() {
               </div>
 
               <button 
-                onClick={() => handleAdd(pkg)}
-                className="w-full bg-[#111111] text-white py-3.5 rounded-full font-medium text-sm hover:bg-neutral-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => !soldOut && handleAdd(pkg)}
+                disabled={soldOut}
+                className={`w-full py-3.5 rounded-full font-medium text-sm transition-all shadow-md flex items-center justify-center gap-2 ${
+                  soldOut ? 'bg-stone-400 text-white cursor-not-allowed' : 'bg-[#111111] text-white hover:bg-neutral-800 cursor-pointer'
+                }`}
               >
-                <span>Add to Order</span>
+                <span>{soldOut ? 'Sold Out' : 'Add to Order'}</span>
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* --- ADD-ONS SECTION --- */}
@@ -234,7 +249,8 @@ export default function PlaceOrder() {
                 {isOpen && (
                   <div className="px-8 pb-8 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-stone-100">
                     {addons.map((addon) => {
-                      const soldOut = isAddonSoldOut(addon.name);
+                      const soldOut = isSoldOut(addon.name);
+                      const livePrice = getLivePrice(addon.name, addon.price);
                       return (
                         <div 
                           key={addon.id}
@@ -249,11 +265,11 @@ export default function PlaceOrder() {
                             {soldOut ? (
                               <span className="text-xs text-red-500 font-semibold uppercase tracking-wider">Sold Out</span>
                             ) : (
-                              <span className="text-xs text-orange-600 font-semibold">GHC {addon.price}</span>
+                              <span className="text-xs text-orange-600 font-semibold">GHC {livePrice}</span>
                             )}
                           </div>
                           <button 
-                            onClick={() => !soldOut && addToCart({ id: addon.id, name: addon.name, price: addon.price, quantity: 1, image: '/showcase.jpg' })}
+                            onClick={() => !soldOut && addToCart({ id: addon.id, name: addon.name, price: livePrice, quantity: 1, image: '/showcase.jpg' })}
                             disabled={soldOut}
                             className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all ${
                               soldOut
