@@ -94,7 +94,7 @@ export default function SplashScreen({ onFinish }) {
             <span className="italic">A Full Feast.</span>
           </h1>
           <p className="text-white/65 text-xs max-w-xs mx-auto mb-7 font-sans font-light leading-relaxed [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">
-            Fish, shrimp, gizzard sauce, sardine & more — hand-prepared and packaged fresh, every single day.
+            Fish, shrimp, gizzard sauce, sardine & more hand prepared and packaged fresh, every single day.
           </p>
           <button
             onClick={finish}

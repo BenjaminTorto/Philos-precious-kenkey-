@@ -65,7 +65,7 @@ export default function Home() {
               <Shield size={18} />
             </div>
             <h3 className="font-serif font-bold text-xl text-stone-900">Seamless Ordering</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">Track your delivery in real-time with live kitchen ETAs and quick 1-click reordering.</p>
+            <p className="text-stone-600 text-sm leading-relaxed">Track your delivery in real time with live kitchen ETAs and quick 1 click reordering.</p>
           </div>
         </div>
 
