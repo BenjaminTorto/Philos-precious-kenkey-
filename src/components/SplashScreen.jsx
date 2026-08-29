@@ -88,12 +88,12 @@ export default function SplashScreen({ onFinish }) {
       {/* --- TEXT CONTENT, VERTICALLY CENTERED --- */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
         <h1 className="font-serif text-white text-4xl sm:text-6xl leading-[1.15] mb-5">
-          Real Kenkey.
+          More Than Kenkey.
           <br />
-          <span className="italic font-light">Made With Love.</span>
+          <span className="italic font-light">A Full Feast.</span>
         </h1>
         <p className="text-white/75 text-sm sm:text-base max-w-md mb-10 font-sans">
-          Hand-wrapped in corn husks, steamed slow, and served fresh — every single day.
+          Fish, shrimp, gizzard sauce, sardine & more — hand-prepared and packaged fresh, every single day.
         </p>
         <button
           onClick={finish}
