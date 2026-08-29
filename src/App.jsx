@@ -12,6 +12,7 @@ import ContactUs from './pages/ContactUs';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import CartDrawer from './components/layout/CartDrawer';
+import SplashScreen from './components/SplashScreen';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -105,6 +106,26 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     sessionStorage.getItem('philos_admin_auth') === 'true'
   );
+
+  // Show the cinematic intro once per browser session, before the real site
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return sessionStorage.getItem('philos_intro_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleSplashFinish = () => {
+    try {
+      sessionStorage.setItem('philos_intro_seen', 'true');
+    } catch {}
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   return (
     <CartProvider>
