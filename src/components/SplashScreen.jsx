@@ -68,13 +68,13 @@ export default function SplashScreen({ onFinish }) {
               muted
               loop
               playsInline
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <img
               src={seg.src}
               alt=""
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           )}
         </div>
