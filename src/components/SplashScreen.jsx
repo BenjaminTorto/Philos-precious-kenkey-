@@ -68,18 +68,18 @@ export default function SplashScreen({ onFinish }) {
       ))}
 
       {/* --- SOFT DARKENING GRADIENT FOR TEXT LEGIBILITY --- */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/5 to-black/35" />
 
       {/* --- QUIET LOGO, TOP LEFT --- */}
       <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
-        <span className="text-white text-sm font-serif tracking-wide">
+        <span className="text-white/90 text-sm font-serif font-light tracking-wide">
           Philos Precious Kenkey
         </span>
 
         {/* --- SKIP, MINIMAL TEXT LINK --- */}
         <button
           onClick={finish}
-          className="text-white/70 text-xs uppercase tracking-widest font-medium hover:text-white transition-colors cursor-pointer"
+          className="text-white/60 text-xs uppercase tracking-widest font-light hover:text-white transition-colors cursor-pointer"
         >
           Skip
         </button>
@@ -87,20 +87,22 @@ export default function SplashScreen({ onFinish }) {
 
       {/* --- TEXT CONTENT, VERTICALLY CENTERED --- */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
-        <h1 className="font-serif text-white text-4xl sm:text-6xl leading-[1.15] mb-5">
-          More Than Kenkey.
-          <br />
-          <span className="italic font-light">A Full Feast.</span>
-        </h1>
-        <p className="text-white/75 text-sm sm:text-base max-w-md mb-10 font-sans">
-          Fish, shrimp, gizzard sauce, sardine & more — hand-prepared and packaged fresh, every single day.
-        </p>
-        <button
-          onClick={finish}
-          className="px-8 py-3.5 rounded-full bg-white text-stone-950 font-sans font-semibold text-sm hover:bg-white/90 transition-all shadow-xl cursor-pointer"
-        >
-          Enter Site
-        </button>
+        <div className="max-w-xs sm:max-w-md mx-auto">
+          <h1 className="font-serif font-light text-white text-2xl sm:text-4xl leading-[1.3] mb-3 [text-shadow:0_2px_20px_rgba(0,0,0,0.35)]">
+            More Than Kenkey.
+            <br />
+            <span className="italic">A Full Feast.</span>
+          </h1>
+          <p className="text-white/65 text-xs max-w-xs mx-auto mb-7 font-sans font-light leading-relaxed [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">
+            Fish, shrimp, gizzard sauce, sardine & more — hand-prepared and packaged fresh, every single day.
+          </p>
+          <button
+            onClick={finish}
+            className="px-6 py-2.5 rounded-full bg-white/95 text-stone-950 font-sans font-normal text-xs hover:bg-white transition-all shadow-lg cursor-pointer"
+          >
+            Enter Site
+          </button>
+        </div>
       </div>
     </div>
   );
