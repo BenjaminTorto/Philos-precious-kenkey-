@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ArrowLeft, MessageCircle } from 'lucide-react';
 import { supabase } from '../config/supabase';
 
+const REDEMPTION_POINTS = 100;
+const REDEMPTION_VALUE = 10; // GHC discount for redeeming REDEMPTION_POINTS
+
 export default function Checkout() {
   const { cart, clearCart } = useCart();
   const navigate = useNavigate();
@@ -16,9 +19,29 @@ export default function Checkout() {
     deliveryType: 'delivery',
   });
 
+  const [loyaltyPoints, setLoyaltyPoints] = useState(null); // null = not checked yet
+  const [checkingPoints, setCheckingPoints] = useState(false);
+  const [redeemApplied, setRedeemApplied] = useState(false);
+
+  const checkLoyaltyPoints = async () => {
+    const phone = formData.phone.trim();
+    if (phone.length < 9) return;
+    setCheckingPoints(true);
+    try {
+      const { data } = await supabase.from('loyalty_members').select('*').eq('phone', phone).single();
+      setLoyaltyPoints(data ? data.points : 0);
+    } catch (err) {
+      setLoyaltyPoints(0);
+    } finally {
+      setCheckingPoints(false);
+    }
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + ((Number(item?.price) || 0) * (item.quantity || 1)), 0);
   const deliveryFee = formData.deliveryType === 'delivery' ? 25 : 0;
-  const total = subtotal + deliveryFee;
+  const canRedeem = loyaltyPoints !== null && loyaltyPoints >= REDEMPTION_POINTS;
+  const loyaltyDiscount = redeemApplied && canRedeem ? REDEMPTION_VALUE : 0;
+  const total = Math.max(0, subtotal + deliveryFee - loyaltyDiscount);
 
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [orderCode, setOrderCode] = React.useState('');
@@ -38,14 +61,17 @@ export default function Checkout() {
     subtotal,
     delivery_fee: deliveryFee,
     total,
+    loyalty_discount: loyaltyDiscount,
     status: 'Pending',
   });
 
   // Saves the order to Supabase (so it's searchable in My Orders / visible in
-  // Admin) and awards loyalty points. Always also writes to localStorage as a
-  // fallback so Track Order still works even if Supabase is unreachable.
+  // Admin), deducts any redeemed points, and awards 10 new points for this
+  // order. Always also writes to localStorage as a fallback so Track Order
+  // still works even if Supabase is unreachable.
   const saveOrder = async (shortId) => {
     const record = buildOrderRecord(shortId);
+    const pointsRedeemed = loyaltyDiscount > 0 ? REDEMPTION_POINTS : 0;
 
     const existingOrders = JSON.parse(localStorage.getItem('philos_orders') || '[]');
     localStorage.setItem(
@@ -57,7 +83,7 @@ export default function Checkout() {
       const { error: orderError } = await supabase.from('orders').insert([record]);
       if (orderError) throw orderError;
 
-      // Award loyalty points: 10 per order, creating the member on their first order
+      // Update loyalty points: subtract anything redeemed, add 10 earned for this order
       const { data: existingMember } = await supabase
         .from('loyalty_members')
         .select('*')
@@ -65,9 +91,10 @@ export default function Checkout() {
         .single();
 
       if (existingMember) {
+        const newPoints = Math.max(0, (existingMember.points || 0) - pointsRedeemed) + 10;
         await supabase
           .from('loyalty_members')
-          .update({ points: (existingMember.points || 0) + 10, customer_name: formData.name })
+          .update({ points: newPoints, customer_name: formData.name })
           .eq('phone', formData.phone);
       } else {
         await supabase
@@ -120,6 +147,9 @@ export default function Checkout() {
     cart.forEach(item => {
       msg += `▪️ ${item.quantity || 1}x ${item.name} (${item.size || 'STANDARD'}) - GHC ${item.price * (item.quantity || 1)}\n`;
     });
+    if (loyaltyDiscount > 0) {
+      msg += `\n*VIP Discount Applied: -GHC ${loyaltyDiscount}*\n`;
+    }
     msg += `\n*TOTAL: GHC ${total}*\n`;
     msg += `\nTrack this order on our website using ID: ${shortId}`;
 
@@ -180,9 +210,40 @@ export default function Checkout() {
                 required
                 placeholder="e.g. 024 123 4567"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setLoyaltyPoints(null); setRedeemApplied(false); }}
+                onBlur={checkLoyaltyPoints}
                 className="w-full p-4 rounded-2xl bg-background border border-primary/10 focus:outline-none"
               />
+
+              {checkingPoints && (
+                <p className="text-xs text-primary/50 mt-2">Checking your VIP points...</p>
+              )}
+
+              {!checkingPoints && loyaltyPoints !== null && (
+                <div className="mt-3 p-4 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-accent">
+                      {loyaltyPoints} VIP {loyaltyPoints === 1 ? 'Point' : 'Points'}
+                    </p>
+                    <p className="text-[11px] text-primary/60 mt-0.5">
+                      {canRedeem
+                        ? `Redeem ${REDEMPTION_POINTS} points for GHC ${REDEMPTION_VALUE} off`
+                        : `Earn ${REDEMPTION_POINTS - loyaltyPoints} more point${REDEMPTION_POINTS - loyaltyPoints === 1 ? '' : 's'} to unlock a discount`}
+                    </p>
+                  </div>
+                  {canRedeem && (
+                    <button
+                      type="button"
+                      onClick={() => setRedeemApplied(!redeemApplied)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shrink-0 transition-all cursor-pointer ${
+                        redeemApplied ? 'bg-accent text-white' : 'bg-white border border-accent/30 text-accent'
+                      }`}
+                    >
+                      {redeemApplied ? 'Applied ✓' : 'Redeem'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -281,6 +342,12 @@ export default function Checkout() {
                 <span>{formData.deliveryType === 'delivery' ? 'Delivery Fee' : 'Pickup'}</span>
                 <span>GHC {deliveryFee}</span>
               </div>
+              {loyaltyDiscount > 0 && (
+                <div className="flex justify-between text-accent font-medium">
+                  <span>VIP Discount</span>
+                  <span>- GHC {loyaltyDiscount}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xl font-bold pt-2 border-t border-primary/10">
                 <span className="font-serif">Total</span>
                 <span className="font-serif">GHC {total}</span>
