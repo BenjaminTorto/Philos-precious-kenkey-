@@ -1,27 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Quote } from 'lucide-react';
+import { supabase } from '../config/supabase';
+
+const FALLBACK_REVIEWS = [
+  {
+    name: 'Kofi Mensah',
+    location: 'East Legon',
+    comment: 'The gizzard sauce is out of this world! Perfectly spiced and the kenkey was super fresh. My new go-to spot.',
+    rating: 5,
+  },
+  {
+    name: 'Abena Serwaa',
+    location: 'Osu',
+    comment: 'Fast delivery and the packaging is so clean and premium. The Medium Pack is my absolute favorite.',
+    rating: 5,
+  },
+  {
+    name: 'Yaw Boateng',
+    location: 'Airport Residential',
+    comment: 'You can tell everything is freshly prepared. That cow leg stew (Kotodwe) is tender and delicious!',
+    rating: 5,
+  },
+];
 
 export default function Testimonials() {
-  const reviews = [
-    {
-      name: 'Kofi Mensah',
-      location: 'East Legon',
-      comment: 'The gizzard sauce is out of this world! Perfectly spiced and the kenkey was super fresh. My new go-to spot.',
-      rating: 5,
-    },
-    {
-      name: 'Abena Serwaa',
-      location: 'Osu',
-      comment: 'Fast delivery and the packaging is so clean and premium. The Medium Pack is my absolute favorite.',
-      rating: 5,
-    },
-    {
-      name: 'Yaw Boateng',
-      location: 'Airport Residential',
-      comment: 'You can tell everything is freshly prepared. That cow leg stew (Kotodwe) is tender and delicious!',
-      rating: 5,
-    },
-  ];
+  const [reviews, setReviews] = useState(FALLBACK_REVIEWS);
+  const [isReal, setIsReal] = useState(false);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('approved', true)
+          .order('created_at', { ascending: false })
+          .limit(6);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setReviews(data.map(r => ({
+            name: r.customer_name,
+            location: 'Verified Customer',
+            comment: r.comment || 'Great experience, highly recommend!',
+            rating: r.rating,
+          })));
+          setIsReal(true);
+        }
+      } catch (err) {
+        // Silently fall back to the written testimonials above
+        console.error('Could not load live reviews:', err);
+      }
+    };
+    fetchReviews();
+  }, []);
 
   return (
     <section className="py-20 max-w-6xl mx-auto px-6 border-t border-primary/10">

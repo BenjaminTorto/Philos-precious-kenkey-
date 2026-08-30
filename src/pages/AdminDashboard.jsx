@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, ShieldCheck, LogOut, Bell, LayoutDashboard, PackageSearch, BarChart3, TrendingUp, DollarSign, ToggleLeft, ToggleRight, Clock, Trophy, Pencil, Check, X, Loader2 } from 'lucide-react';
+import { RefreshCw, ShieldCheck, LogOut, Bell, LayoutDashboard, PackageSearch, BarChart3, TrendingUp, DollarSign, ToggleLeft, ToggleRight, Clock, Trophy, Pencil, Check, X, Loader2, Star, Trash2 } from 'lucide-react';
 import { supabase } from '../config/supabase';
 
 export default function AdminDashboard({ setIsAuthenticated }) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'inventory', 'analytics'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'inventory', 'analytics', 'reviews'
   
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newOrderAlert, setNewOrderAlert] = useState(false);
 
@@ -38,6 +39,15 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         .order('category', { ascending: false });
       if (invError) throw invError;
       setInventory(invData || []);
+
+      // Fetch Reviews
+      try {
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!reviewError) setReviews(reviewData || []);
+      } catch (e) {}
 
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -143,6 +153,30 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   };
 
+  // --- Review moderation ---
+  const approveReview = async (id) => {
+    try {
+      const { error } = await supabase.from('reviews').update({ approved: true }).eq('id', id);
+      if (error) throw error;
+      setReviews(reviews.map(r => r.id === id ? { ...r, approved: true } : r));
+    } catch (err) {
+      console.error('Error approving review:', err);
+      alert('Could not approve this review. Please try again.');
+    }
+  };
+
+  const deleteReview = async (id) => {
+    if (!confirm('Delete this review permanently?')) return;
+    try {
+      const { error } = await supabase.from('reviews').delete().eq('id', id);
+      if (error) throw error;
+      setReviews(reviews.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      alert('Could not delete this review. Please try again.');
+    }
+  };
+
   // --- Analytics Calculations ---
   const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
   const completedOrders = orders.filter(o => o.status === 'Completed').length;
@@ -216,7 +250,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         {[
           { id: 'orders', label: 'Live Orders', icon: LayoutDashboard },
           { id: 'inventory', label: 'Inventory Manager', icon: PackageSearch },
-          { id: 'analytics', label: 'Sales & Analytics', icon: BarChart3 }
+          { id: 'analytics', label: 'Sales & Analytics', icon: BarChart3 },
+          { id: 'reviews', label: 'Reviews', icon: Star }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -227,6 +262,11 @@ export default function AdminDashboard({ setIsAuthenticated }) {
           >
             <tab.icon size={16} />
             {tab.label}
+            {tab.id === 'reviews' && reviews.filter(r => !r.approved).length > 0 && (
+              <span className="bg-accent text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
+                {reviews.filter(r => !r.approved).length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -419,6 +459,58 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* Tab Content: Reviews */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-4">
+          {reviews.length === 0 ? (
+            <div className="text-center py-16 bg-surface rounded-3xl border border-primary/10">
+              <p className="font-serif text-xl mb-2">No Reviews Yet</p>
+              <p className="text-sm text-primary/60">Reviews will appear here once customers rate a completed order.</p>
+            </div>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="bg-surface rounded-3xl p-6 border border-primary/10 shadow-xl flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex gap-0.5 text-accent">
+                      {[...Array(review.rating)].map((_, i) => (
+                        <Star key={i} size={14} fill="currentColor" />
+                      ))}
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                      review.approved ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-700'
+                    }`}>
+                      {review.approved ? 'Live on Site' : 'Pending Approval'}
+                    </span>
+                  </div>
+                  <p className="font-serif font-medium text-lg mb-1">{review.customer_name}</p>
+                  {review.comment && <p className="text-sm text-primary/70 italic">"{review.comment}"</p>}
+                  <p className="text-[10px] text-primary/40 mt-2 font-mono">Order #{review.order_short_id?.toUpperCase()}</p>
+                </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                  {!review.approved && (
+                    <button
+                      onClick={() => approveReview(review.id)}
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-all cursor-pointer"
+                      title="Approve and show on site"
+                    >
+                      <Check size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteReview(review.id)}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all cursor-pointer"
+                    title="Delete review"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

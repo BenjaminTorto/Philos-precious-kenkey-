@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flame, Sparkles, Shield } from 'lucide-react';
+import Testimonials from '../components/Testimonials';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function Home() {
               <Shield size={18} />
             </div>
             <h3 className="font-serif font-bold text-xl text-stone-900">Seamless Ordering</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">Track your delivery in real time with live kitchen ETAs and quick 1 click reordering.</p>
+            <p className="text-stone-600 text-sm leading-relaxed">Track your delivery in real-time with live kitchen ETAs and quick 1-click reordering.</p>
           </div>
         </div>
 
@@ -130,42 +131,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* --- TESTIMONIALS SECTION --- */}
-        <div className="text-center space-y-12">
-          <div className="space-y-4">
-            <span className="text-xs uppercase tracking-widest text-orange-600 font-bold">Customer Love</span>
-            <h2 className="font-serif text-4xl md:text-5xl font-normal text-stone-900">What Our Food Lovers Say</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto text-left">
-            <div className="bg-white/70 backdrop-blur-2xl border border-white/80 rounded-3xl p-8 shadow-xl shadow-orange-950/5 relative">
-              <div className="text-orange-500 mb-4 tracking-widest text-lg">★★★★★</div>
-              <p className="text-stone-600 text-sm italic mb-8 leading-relaxed">"The gizzard sauce is out of this world! Perfectly spiced and the kenkey was super fresh. My new go-to spot."</p>
-              <div>
-                <h4 className="font-serif font-bold text-stone-900">Kofi Mensah</h4>
-                <span className="text-[10px] uppercase tracking-widest text-orange-600">East Legon</span>
-              </div>
-            </div>
-            
-            <div className="bg-white/70 backdrop-blur-2xl border border-white/80 rounded-3xl p-8 shadow-xl shadow-orange-950/5 relative">
-              <div className="text-orange-500 mb-4 tracking-widest text-lg">★★★★★</div>
-              <p className="text-stone-600 text-sm italic mb-8 leading-relaxed">"Fast delivery and the packaging is so clean and premium. The Medium Pack is my absolute favorite."</p>
-              <div>
-                <h4 className="font-serif font-bold text-stone-900">Abena Serwaa</h4>
-                <span className="text-[10px] uppercase tracking-widest text-orange-600">Osu</span>
-              </div>
-            </div>
-
-            <div className="bg-white/70 backdrop-blur-2xl border border-white/80 rounded-3xl p-8 shadow-xl shadow-orange-950/5 relative">
-              <div className="text-orange-500 mb-4 tracking-widest text-lg">★★★★★</div>
-              <p className="text-stone-600 text-sm italic mb-8 leading-relaxed">"You can tell everything is freshly prepared. That cow leg stew (Kotodwe) is tender and delicious!"</p>
-              <div>
-                <h4 className="font-serif font-bold text-stone-900">Yaw Boateng</h4>
-                <span className="text-[10px] uppercase tracking-widest text-orange-600">Airport Residential</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Testimonials />
 
       </div>
     </div>

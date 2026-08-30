@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, RotateCcw, Crown } from 'lucide-react';
+import { Search, Loader2, RotateCcw, Crown, Star, CheckCircle } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { useCart } from '../context/CartContext';
 
@@ -12,6 +12,14 @@ export default function MyOrders() {
   const [searched, setSearched] = useState(false);
   const { addToCart, setIsCartOpen } = useCart();
   const navigate = useNavigate();
+
+  // Reviews already left, keyed by order short_id
+  const [reviewedIds, setReviewedIds] = useState({});
+  // Which order's review form is currently open
+  const [openReviewId, setOpenReviewId] = useState(null);
+  const [ratingDraft, setRatingDraft] = useState(0);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -25,10 +33,47 @@ export default function MyOrders() {
       
       setOrders(orderData || []);
       setLoyalty(loyaltyData || null);
+
+      // Check which of these orders already have a review
+      const shortIds = (orderData || []).map(o => o.short_id).filter(Boolean);
+      if (shortIds.length > 0) {
+        const { data: reviewData } = await supabase.from('reviews').select('order_short_id').in('order_short_id', shortIds);
+        const reviewedMap = {};
+        (reviewData || []).forEach(r => { reviewedMap[r.order_short_id] = true; });
+        setReviewedIds(reviewedMap);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitReview = async (order) => {
+    if (ratingDraft === 0) {
+      alert('Please select a star rating.');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      const { error } = await supabase.from('reviews').insert([{
+        order_short_id: order.short_id,
+        customer_name: order.customer_name,
+        rating: ratingDraft,
+        comment: commentDraft.trim() || null,
+        approved: false,
+      }]);
+      if (error) throw error;
+
+      setReviewedIds(prev => ({ ...prev, [order.short_id]: true }));
+      setOpenReviewId(null);
+      setRatingDraft(0);
+      setCommentDraft('');
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      alert('Could not submit your review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -98,6 +143,60 @@ export default function MyOrders() {
                         <RotateCcw size={14} /> Reorder
                       </button>
                     </div>
+
+                    {/* --- REVIEW SECTION (only for completed orders) --- */}
+                    {order.status === 'Completed' && order.short_id && (
+                      <div className="mt-4 pt-4 border-t border-primary/10">
+                        {reviewedIds[order.short_id] ? (
+                          <div className="flex items-center gap-2 text-xs text-green-600 font-bold uppercase tracking-wider">
+                            <CheckCircle size={14} /> Thanks for your review!
+                          </div>
+                        ) : openReviewId === order.short_id ? (
+                          <div className="space-y-3">
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <button key={n} onClick={() => setRatingDraft(n)} className="cursor-pointer">
+                                  <Star
+                                    size={22}
+                                    className={n <= ratingDraft ? 'text-accent' : 'text-primary/20'}
+                                    fill={n <= ratingDraft ? 'currentColor' : 'none'}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                            <textarea
+                              rows="2"
+                              placeholder="Tell us how it was (optional)"
+                              value={commentDraft}
+                              onChange={(e) => setCommentDraft(e.target.value)}
+                              className="w-full bg-background border border-primary/10 rounded-2xl p-3 text-sm resize-none focus:outline-none focus:border-primary transition-all"
+                            ></textarea>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => submitReview(order)}
+                                disabled={submittingReview}
+                                className="bg-primary text-background px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-md cursor-pointer disabled:opacity-50"
+                              >
+                                {submittingReview ? 'Submitting...' : 'Submit Review'}
+                              </button>
+                              <button
+                                onClick={() => { setOpenReviewId(null); setRatingDraft(0); setCommentDraft(''); }}
+                                className="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-primary/50 hover:text-primary cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setOpenReviewId(order.short_id)}
+                            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent hover:text-accent/80 cursor-pointer"
+                          >
+                            <Star size={14} /> Leave a Review
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })
