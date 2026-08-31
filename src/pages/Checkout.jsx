@@ -38,7 +38,7 @@ export default function Checkout() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + ((Number(item?.price) || 0) * (item.quantity || 1)), 0);
-  const deliveryFee = formData.deliveryType === 'delivery' ? 25 : 0;
+  const deliveryFee = 0; // Delivery fee is confirmed separately, not auto-charged
   const canRedeem = loyaltyPoints !== null && loyaltyPoints >= REDEMPTION_POINTS;
   const loyaltyDiscount = redeemApplied && canRedeem ? REDEMPTION_VALUE : 0;
   const total = Math.max(0, subtotal + deliveryFee - loyaltyDiscount);
@@ -256,7 +256,7 @@ export default function Checkout() {
                     formData.deliveryType === 'delivery' ? 'bg-primary text-background border-primary' : 'bg-background text-primary border-primary/10'
                   }`}
                 >
-                  Delivery (GHC 25)
+                  Delivery
                 </button>
                 <button
                   type="button"
@@ -340,7 +340,7 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-primary/70">
                 <span>{formData.deliveryType === 'delivery' ? 'Delivery Fee' : 'Pickup'}</span>
-                <span>GHC {deliveryFee}</span>
+                <span>{formData.deliveryType === 'delivery' ? 'Confirmed after order' : 'GHC 0'}</span>
               </div>
               {loyaltyDiscount > 0 && (
                 <div className="flex justify-between text-accent font-medium">
